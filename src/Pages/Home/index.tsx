@@ -1,10 +1,16 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+
+import axios from 'axios'
 
 import ProfitComp from "../../Components/ProfitComp";
 import RectComp from "../../Components/RectComp";
 import RectLayout from "../../Components/rectLayout";
+import MyTimer from "../../Components/Timer";
 
 import { RiArrowUpSLine, RiArrowDownSLine } from "react-icons/ri";
+
+import { INITIAL_HOUR } from "../../Constants";
+import CountdownTimer from "../../Components/CountdownTimer";
 
 function Home() {
 
@@ -45,6 +51,8 @@ function Home() {
 
   const selectArr = [500, 200, 100, 50, 20, 10, 5, 1];
 
+  // Set State
+
   const [selectCount, setSelectCount] = useState(0);
 
   const [topBuyers, setTopBuyers] = useState([
@@ -68,20 +76,37 @@ function Home() {
     },
   ])
 
+  const [address, SetAddress] = useState('');
+  const [tokenBalance, setTokenBalance] = useState(0);
+
+  const [countDown, setCountDown] = useState(300);
+
   // Define function
 
   const setTicketCount = (count: number) => {
     console.log('setTicketCount ==> ', count);
-    // if(count == 1){
-    //   setSelectCount(flag => flag + 1);
-    // } else if(count == -1){
-    //   let temp = Math.max(0, selectCount-1);
-    //   setSelectCount(temp);
-    // }
     let temp = Math.max(0, selectCount + count);
     setSelectCount(temp);
     console.log('selectCount ==> ', selectCount)
   }
+
+  const connectWallet = async() => {
+    try {
+      let accounts = await (window as any).unisat.requestAccounts();
+      SetAddress(accounts[0]);
+      console.log('connect success', accounts[0]);
+      const reply = await axios.post("http://146.19.215.121:5432/api/brc/getInfo", {
+        address: accounts[0],
+        tickerName: 'MEMQ'
+      });
+      setTokenBalance(reply.data.data.overallBalance);
+      console.log('reply ==> ', reply.data.data.overallBalance);
+    } catch (e) {
+      console.log('connect failed');
+    }
+  }
+
+  // Define Hook
 
   return <div className="flex flex-row">
     {/* Side bar */}
@@ -90,9 +115,13 @@ function Home() {
         <img src="./assets/logo.png" alt="logo file" className="mx-auto mt-5" />
         <p className="text-[26px] text-white text-center font-bold">MrsDoge</p>
 
-        <div className="flex flex-row justify-around items-center border-y-2 border-yellow-500 bg-[#2C254A] px-6 py-2 text-yellow-500 font-bold text-[22px] mt-6">
+        <div 
+          className="flex flex-row justify-around items-center border-y-2 border-yellow-500 bg-[#2C254A] px-6 py-2 text-yellow-500 font-bold text-[22px] mt-6 cursor-pointer hover:brightness-125 duration-300"
+          onClick={() => connectWallet()}
+        >
           <img className="w-[30px] h-[30px]" src="./assets/metamask.png" />
-          <p>Connect</p>
+          {address == '' ? <p>Connect</p> : <p className="text-[16px] text-left pl-4">{address.slice(0,14)+'...'}</p>}
+
         </div>
         {/* Ticket List */}
         <div className="flex flex-row items-center justify-start gap-2 pl-5 mt-5">
@@ -112,11 +141,26 @@ function Home() {
           </div>
         </div>
 
+        {/* Your BTC Spent */}
+        <div className="flex flex-row items-center justify-start gap-2 pl-5 mt-5">
+          <img src="./assets/spentImg.svg"></img>
+          <div className="flex flex-col gap-0">
+            <p className="text-white">Your Token Balance</p>
+            <p className="-mt-1 text-yellow-400">{tokenBalance} Tickets</p>
+          </div>
+        </div>
+
       </div>
     </div>
 
     {/* Main Panel */}
     <div className="flex flex-col bg-[#2C254A] w-[calc(100%-200px)] p-10">
+
+      {/* Timer */}
+      <div className="flex flex-row gap-4 mx-auto">
+        <MyTimer />
+      </div>
+
       {/* First Part */}
       <div className="flex flex-row items-center justify-between gap-6">
         <RectComp src={'pot'} headTitle={'BNB'} miniTitle={'ROUND POT SIZE'} />
