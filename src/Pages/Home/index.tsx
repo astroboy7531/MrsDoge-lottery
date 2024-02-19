@@ -9,45 +9,19 @@ import MyTimer from "../../Components/Timer";
 
 import { RiArrowUpSLine, RiArrowDownSLine } from "react-icons/ri";
 
-import { INITIAL_HOUR } from "../../Constants";
-import CountdownTimer from "../../Components/CountdownTimer";
+import { INITIAL_HOUR, PRIOR_BUYER_BENEFIT_ARR, COST_PER_TICKET, INITIAL_POT_PRICE } from "../../Constants";
 
 function Home() {
 
   // Difine Contstant
 
-  const COST_PER_TICKET = 0.00000892;
-
   // Define the Variables
-
-  const profitArr = [
-    {
-      nth: 1,
-      ticketCost: 0.00000892,
-      percent: 30,
-      reward: 'Nan'
-    },
-    {
-      nth: 2,
-      ticketCost: 0.00000892,
-      percent: 20,
-      reward: 'Nan'
-    },
-    {
-      nth: 3,
-      ticketCost: 0.00000892,
-      percent: 10,
-      reward: 'Nan'
-    },
-  ]
 
   const totalCount = {
     totalBuyCount: 0,
     totalBtc: 0,
     burnCount: 0
   }
-
-  const yourTicket = 0;
 
   const selectArr = [500, 200, 100, 50, 20, 10, 5, 1];
 
@@ -75,10 +49,16 @@ function Home() {
       LastBuy: 'N/A'
     },
   ])
+  const [PotPrice, usePotPrice] = useState(INITIAL_POT_PRICE);
 
+  // wallet
   const [address, SetAddress] = useState('');
   const [tokenBalance, setTokenBalance] = useState(0);
 
+  // constant
+  const [bonusFactor, setBonusFactor] = useState(0);
+  const [ownTicket, setOwnTicket] = useState(0);
+  const [ownTicketList, setOwnTicketList]:any = useState(null);
   const [countDown, setCountDown] = useState(300);
 
   // Define function
@@ -90,7 +70,7 @@ function Home() {
     console.log('selectCount ==> ', selectCount)
   }
 
-  const connectWallet = async() => {
+  const connectWallet = async () => {
     try {
       let accounts = await (window as any).unisat.requestAccounts();
       SetAddress(accounts[0]);
@@ -106,7 +86,61 @@ function Home() {
     }
   }
 
+  const connectWalletManual = async () => {
+    if (typeof (window as any).unisat !== 'undefined') {
+      console.log('UniSat Wallet is installed!');
+      connectWallet()
+    } else {
+      window.open("https://chromewebstore.google.com/detail/unisat-wallet/ppbibelpcjmhbdihakflkdcoccbgbkpo")
+    }
+  }
+
+  const buyTicketFunc = async () => {
+    const payload = {
+      address: address,
+      ticketCount: selectCount
+    };
+
+    const reply = await axios.post("http://146.19.215.121:5432/api/buyticket", payload);
+    setOwnTicket(reply.data[address]);
+
+    getOwnTicketList();
+
+    console.log('reply => ', reply);
+  }
+
+  const getOwnTicketList = async () => {
+    const reply = await axios.get("http://146.19.215.121:5432/api/getOwnTicketList");
+    console.log('getOwnTicketList ==> ', reply.data);
+
+    let list = reply.data;
+    const sorted = Object.fromEntries(
+      Object.entries(list).sort(([, a]:any, [, b]:any) => b - a)
+    )
+
+    console.log('After list ==> ', Object.keys(sorted));
+    setOwnTicketList(sorted);
+
+
+    
+    if (address != '') setOwnTicket(reply.data[address]);
+  }
+
   // Define Hook
+  useEffect(() => {
+    connectWallet();
+    getOwnTicketList();
+  }, []);
+
+  useEffect(() => {
+    if (tokenBalance > 1000) {
+      setBonusFactor(0.1)
+    } else if (tokenBalance > 500) {
+      setBonusFactor(0.05)
+    } else if (tokenBalance > 200) {
+      setBonusFactor(0.02)
+    }
+  }, [tokenBalance])
 
   return <div className="flex flex-row">
     {/* Side bar */}
@@ -115,12 +149,12 @@ function Home() {
         <img src="./assets/logo.png" alt="logo file" className="mx-auto mt-5" />
         <p className="text-[26px] text-white text-center font-bold">MrsDoge</p>
 
-        <div 
+        <div
           className="flex flex-row justify-around items-center border-y-2 border-yellow-500 bg-[#2C254A] px-6 py-2 text-yellow-500 font-bold text-[22px] mt-6 cursor-pointer hover:brightness-125 duration-300"
-          onClick={() => connectWallet()}
+          onClick={() => connectWalletManual()}
         >
           <img className="w-[30px] h-[30px]" src="./assets/metamask.png" />
-          {address == '' ? <p>Connect</p> : <p className="text-[16px] text-left pl-4">{address.slice(0,14)+'...'}</p>}
+          {address == '' ? <p>Connect</p> : <p className="text-[16px] text-left pl-4">{address.slice(0, 14) + '...'}</p>}
 
         </div>
         {/* Ticket List */}
@@ -128,18 +162,18 @@ function Home() {
           <img src="./assets/ticketImg.svg"></img>
           <div className="flex flex-col gap-0">
             <p className="text-white">Your Tickets</p>
-            <p className="-mt-1 text-yellow-400">{yourTicket} Tickets</p>
+            <p className="-mt-1 text-yellow-400">{ownTicket} Tickets</p>
           </div>
         </div>
 
         {/* Your BTC Spent */}
-        <div className="flex flex-row items-center justify-start gap-2 pl-5 mt-5">
+        {/* <div className="flex flex-row items-center justify-start gap-2 pl-5 mt-5">
           <img src="./assets/spentImg.svg"></img>
           <div className="flex flex-col gap-0">
             <p className="text-white">Your BTC Spent</p>
             <p className="-mt-1 text-yellow-400">{0} Tickets</p>
           </div>
-        </div>
+        </div> */}
 
         {/* Your BTC Spent */}
         <div className="flex flex-row items-center justify-start gap-2 pl-5 mt-5">
@@ -163,7 +197,7 @@ function Home() {
 
       {/* First Part */}
       <div className="flex flex-row items-center justify-between gap-6">
-        <RectComp src={'pot'} headTitle={'BNB'} miniTitle={'ROUND POT SIZE'} />
+        <RectComp src={'pot'} headTitle={`${PotPrice} BTC`} miniTitle={'ROUND POT SIZE'} />
         <RectComp src={'sandClock'} headTitle={'Buy a Ticket To Start the Round!'} miniTitle={''} />
         <RectComp src={'ticketPrice'} headTitle={'0.00000892'} miniTitle={'TICKET PRICE'} />
         <RectComp src={'round'} headTitle={'12'} miniTitle={'ROUND Number'} />
@@ -178,14 +212,18 @@ function Home() {
               PROFITABILITY METRICS
             </p>
             {/* <ProfitComp /> */}
-            {profitArr.map((value, index) =>
+            {/* {profitArr.map((value, index) => */}
+            
+            {ownTicketList != null ? 
+            Object.keys(ownTicketList).map((value, index) => index < 3 ? 
               <ProfitComp
-                nth={value.nth}
-                ticketPrice={value.ticketCost}
-                percent={value.percent}
-                reward={value.reward}
-              />
-            )}
+                nth={index}
+                ticketPrice={ownTicketList[value]}
+                percent={PRIOR_BUYER_BENEFIT_ARR[index]}
+                reward={PotPrice * PRIOR_BUYER_BENEFIT_ARR[index]}
+                key={index}
+              /> : <></>
+            ) : <></>}
           </RectLayout>
         </div>
 
@@ -213,14 +251,18 @@ function Home() {
               <div
                 className="border border-pink-500 rounded-xl text-white hover:bg-pink-600 w-[calc(25%-6px)] mt-2 text-center cursor-pointer"
                 onClick={() => setSelectCount(value)}
+                key={index}
               >
                 {value}
               </div>
             ))}
           </div>
           {/* Buy Button */}
-          <div className="w-full rounded-2xl bg-blue-400 p-2 mt-4 hover:shadow-blue-500 shadow-lg text-center font-bold text-[24px]">
-            BUY({Math.floor(COST_PER_TICKET * selectCount * 100000000) / 100000000} BNB)
+          <div
+            className="w-full rounded-2xl bg-blue-400 p-2 mt-4 hover:shadow-blue-500 shadow-lg text-center font-bold text-[24px] cursor-pointer"
+            onClick={() => buyTicketFunc()}
+          >
+            BUY({Math.floor(COST_PER_TICKET * (1 - bonusFactor) * selectCount * 100000000) / 100000000} BTC)
           </div>
         </div>
 
@@ -235,7 +277,7 @@ function Home() {
               <p className='ml-auto font-bold text-blue-400'>{totalCount.totalBuyCount} Ticket</p>
             </div>
             <div className='flex flex-row mt-4'>
-              <p className='mr-auto text-white'>BNB Spent On Tickets:</p>
+              <p className='mr-auto text-white'>BTC Spent On Tickets:</p>
               <p className='ml-auto font-bold text-blue-400'>{totalCount.totalBuyCount} Ticket</p>
             </div>
             <div className='flex flex-row mt-4'>
@@ -254,6 +296,7 @@ function Home() {
             TOP BUYERS
           </p>
           {/* table */}
+          {ownTicketList != null ? 
           <table className="w-full border-spacing-2">
             <thead>
               <tr>
@@ -265,18 +308,19 @@ function Home() {
               </tr>
             </thead>
             <tbody className="text-center">
-              {topBuyers.map((value, index) => <tr className="text-[22px] py-2">
+              {Object.keys(ownTicketList).map((value, index) => index < 3 ? 
+              <tr className="text-[22px] py-2" key={index}>
                 <td className="flex justify-center">
                   <div className="bg-blue-500 text-black rounded-full w-8">{index + 1}</div>
                 </td>
-                <td>{value.address}</td>
-                <td>{value.tickets}</td>
-                <td>{value.ToWin}</td>
-                <td>{value.LastBuy}</td>
-              </tr>)}
+                <td>{value.slice(0, 18)+'...'}</td>
+                <td>{ownTicketList[value]}</td>
+                <td>TBD</td>
+                <td>TBD</td>
+              </tr> : <></>)}
 
             </tbody>
-          </table>
+          </table> : <></>}
         </div>
       </RectLayout>
     </div>

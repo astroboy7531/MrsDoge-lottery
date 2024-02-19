@@ -1,10 +1,8 @@
-import React from 'react'
-
 interface ProfitCompProps {
     nth: number,
     ticketPrice: number,
     percent: number,
-    reward: string
+    reward: number
 }
 
 const ProfitComp = ({
@@ -23,7 +21,7 @@ const ProfitComp = ({
         </div>
         <div className='flex flex-row'>
             <p className='mr-auto text-white'>Cost Of Tickets:</p>
-            <p className='font-bold text-[#fe41e2] ml-auto'>{ticketPrice} BNB</p>
+            <p className='font-bold text-[#fe41e2] ml-auto'>{ticketPrice} BTC</p>
         </div>
         <div className='flex flex-row'>
             <p className='mr-auto text-white'>Percentage That The First Place Wins:</p>
@@ -31,7 +29,7 @@ const ProfitComp = ({
         </div>
         <div className='flex flex-row'>
             <p className='mr-auto text-white'>Amount To Be Won:</p>
-            <p className='font-bold text-[#fe41e2] ml-auto'>{reward}</p>
+            <p className='font-bold text-[#fe41e2] ml-auto'>{reward} BTC</p>
         </div>
     </div>
   )
