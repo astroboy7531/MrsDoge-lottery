@@ -1,4 +1,3 @@
-import React, { useState } from "react";
 import { CountdownCircleTimer } from "react-countdown-circle-timer";
 // import "./styles.css";
 
@@ -24,7 +23,6 @@ const renderTime = (dimension: any, time: any) => {
 const getTimeSeconds = (time: any) => (minuteSeconds - time) | 0;
 const getTimeMinutes = (time: any) => ((time % hourSeconds) / minuteSeconds) | 0;
 const getTimeHours = (time: any) => ((time % daySeconds) / hourSeconds) | 0;
-const getTimeDays = (time: any) => (time / daySeconds) | 0;
 
 export default function MyTimer() {
   const stratTime = Date.now() / 1000; // use UNIX timestamp in seconds

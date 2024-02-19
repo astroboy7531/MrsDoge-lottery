@@ -1,5 +1,3 @@
-import React from 'react'
-
 interface RectComp {
     src: string,
     headTitle: string,
